@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Direct</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Importa o Socket.io para o cliente -->
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="bg-black text-white font-sans antialiased">
+
+    <div class="flex h-screen overflow-hidden">
+
+        <!-- BARRA LATERAL ESQUERDA (MENU DESKTOP) -->
+        <aside class="hidden md:flex flex-col w-20 xl:w-64 border-r border-zinc-800 p-4 justify-between bg-black">
+            <div class="space-y-8">
+                <h1 class="text-xl font-bold italic font-serif hidden xl:block px-2">Instagram</h1>
+                <nav class="space-y-2">
+                    <a href="#" class="flex items-center gap-4 p-3 hover:bg-zinc-900 rounded-lg transition"><i data-lucide="home"></i> <span class="hidden xl:inline">Início</span></a>
+                    <a href="#" class="flex items-center gap-4 p-3 bg-zinc-900 rounded-lg transition"><i data-lucide="message-circle"></i> <span class="hidden xl:inline font-bold">Mensagens</span></a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- SUB-BARRA DE CHATS (LISTA DE CONVERSAS) -->
+        <section class="w-full md:w-80 border-r border-zinc-800 flex flex-col bg-black">
+            <div class="p-5 border-b border-zinc-800 flex justify-between items-center">
+                <h2 class="text-xl font-bold flex items-center gap-2">seu_usuario <i data-lucide="chevron-down" class="w-4 h-4"></i></h2>
+                <i data-lucide="square-pen" class="cursor-pointer"></i>
+            </div>
+            <!-- Lista de conversas fake -->
+            <div class="flex-1 overflow-y-auto p-2 space-y-1">
+                <div class="flex items-center gap-3 p-3 bg-zinc-900 rounded-lg cursor-pointer">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-yellow-500 to-purple-600 p-[2px]">
+                        <div class="w-full h-full bg-zinc-800 rounded-full border-2 border-black"></div>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-sm">Neymar Jr</p>
+                        <p class="text-xs text-zinc-400 truncate w-44">Ativo há 5 min</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ÁREA DA CONVERSA (CHAT) -->
+        <section class="hidden md:flex flex-1 flex-col h-full bg-black">
+            <!-- Header do Chat -->
+            <div class="p-4 border-b border-zinc-800 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-zinc-700"></div>
+                <div>
+                    <p class="font-semibold text-sm">Neymar Jr</p>
+                    <p class="text-xs text-green-500">Online</p>
+                </div>
+            </div>
+
+            <!-- Balões de Mensagens -->
+            <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
+                <!-- Exemplo de msg recebida -->
+                <div class="flex gap-2 max-w-[70%]">
+                    <div class="bg-zinc-800 p-3 rounded-2xl text-sm rounded-bl-none">E aí, beleza? Vi seu app clone do Insta, ficou top!</div>
+                </div>
+            </div>
+
+            <!-- Input de Enviar Mensagem -->
+            <div class="p-4 bg-black">
+                <form id="chat-form" class="flex items-center gap-3 border border-zinc-800 rounded-full px-4 py-2 bg-zinc-950">
+                    <i data-lucide="smile" class="text-zinc-400 cursor-pointer"></i>
+                    <input id="chat-input" type="text" placeholder="Enviar mensagem..." class="flex-1 bg-transparent border-none outline-none text-sm placeholder-zinc-500">
+                    <button type="submit" class="text-sky-500 font-semibold text-sm hover:text-white transition">Enviar</button>
+                </form>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- LÓGICA DO JAVASCRIPT & WEB-SOCKET -->
+    <script>
+        lucide.createIcons();
+        const socket = io(); // Conecta automaticamente no nosso backend
+
+        const form = document.getElementById('chat-form');
+        const input = document.getElementById('chat-input');
+        const container = document.getElementById('messages-container');
+
+        // Escuta o envio do formulário
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (input.value.trim() !== '') {
+                // Envia para o servidor com um ID temporário de usuário
+                socket.emit('chat message', {
+                    text: input.value,
+                    sender: socket.id
+                });
+                input.value = '';
+            }
+        });
+
+        // Escuta quando o servidor manda uma nova mensagem recebida
+        socket.on('chat message', (data) => {
+            const messageDiv = document.createElement('div');
+            
+            // Verifica se a mensagem foi enviada por você ou por outro
+            if (data.sender === socket.id) {
+                // Mensagem enviada (Direita - Azul/Estilo Insta)
+                messageDiv.className = 'flex gap-2 max-w-[70%] self-end';
+                messageDiv.innerHTML = `<div class="bg-sky-600 p-3 rounded-2xl text-sm rounded-br-none">${data.text}</div>`;
+            } else {
+                // Mensagem recebida (Esquerda - Cinza)
+                messageDiv.className = 'flex gap-2 max-w-[70%]';
+                messageDiv.innerHTML = `<div class="bg-zinc-800 p-3 rounded-2xl text-sm rounded-bl-none">${data.text}</div>`;
+            }
+
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight; // Auto-scroll para baixo
+        });
+    </script>
+</body>
+</html>
